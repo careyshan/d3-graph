@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Éire</title>
+  <style>
+  .boundary {
+    fill: #ddd;
+    stroke: #888;
+    stroke-linejoin: round;
+  }
+  svg {
+    border-style: solid;
+    border-width: 1px;
+    border-color: #ccc;
+  }
+  #tooltip{
+    position: absolute;
+    z-index: 2;
+    background: rgba(0,153,76,0.8);
+    width:130px;
+    height:40px;
+    color:white;
+    font-size: 14px;
+    padding:5px;
+    top:-150px;
+    left:-150px;
+    font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+  }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="tooltip"></div>
+  <script src="scripts/d3/build/d3.js"></script>
+  <script src="http://d3js.org/topojson.v1.min.js"></script>
+  <script src="https://d3js.org/d3-drag.v1.min.js"></script>
+
+  <script>
+    (function() {
+
+      var height = 600,
+          width = 900,
+          ireland = void 0,
+          map = void 0;
+
+      var hover = function(d) {
+        console.log('d', d, 'event', event);
+        var div = document.getElementById('tooltip');
+        div.style.left = event.pageX +'px';
+        div.style.top = event.pageY + 'px';
+        div.innerHTML = d.properties.NAME_TAG + '<br>' + d.properties.LATITUDE;
+        };
+
+     var highlight = function(d) {
+         d3.select(this)
+         .attr("d", path)
+         .style('fill','#0C9CDF')
+       };
+
+     var unhighlight = function(d) {
+         d3.select(this)
+         .attr("d", path)
+         .style('fill','#eee')
+       };
+
+
+      var projection = d3.geoMercator()
+                         .center([-8, 53])
+                         .scale(3000)
+                         .translate([450, 250]);
+      var path = d3.geoPath()
+                  .projection(projection);
+
+      // Special d3 helper that converts geo coordinates to paths
+      // based on a projection
+      var path = d3.geoPath().projection(projection);
+
+      var svg = d3.select("#map")
+          .append("svg")
+          .attr("width", width)
+          .attr("height", height);
+
+      d3.json('counties_simplified.json', function(error, data) {
+        if(error) return;
+
+        console.log('ireland', data);
+        var states = data.features;
+
+        // Setup the scale and translate
+        var b, s, t;
+        projection.scale(1).translate([0, 0]);
+        var b = path.bounds(data);
+        var s = .95 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height);
+        var t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1])) / 2];
+        projection.scale(s).translate(t);
+
+        var map = svg.append('g').attr('class', 'boundary');
+        ireland = map.selectAll('path').data(states);
+
+        //Enter
+        ireland.enter()
+        .append('path')
+        .attr('d', path)
+        .on("mouseover", function(d) {
+            hover(d);
+            highlight.call(this, d);
+          //showTextToolTip(d);
+        })
+        .on("mouseout", function(d) {
+          d3.select(this)
+          unhighlight.call(this, d);
+        });
+
+
+/*.on("mouseover", function() {
+  d3.select(this)
+  .attr("d", path)
+  .style('fill','#0C9CDF')*/
+
+        //Update
+        ireland.attr('fill', '#eee')
+        /*.on("mouseout", function(feature) {
+          d3.select(this)
+          .attr("d", path)
+          .style("fill",'#eee')
+        });*/
+
+
+
+        //Exit
+        ireland.exit()
+        /*.on("mouseout", function() {
+          d3.select(this)
+          .attr("d", path)
+          .style("fill",'#eee')
+        });*/
+      });
+
+    })();
+  </script>
+</body>
